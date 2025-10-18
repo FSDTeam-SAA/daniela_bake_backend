@@ -1,0 +1,54 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+logs/
+debug.log
+error.log
+
+# Build output
+dist/
+build/
+coverage/
+.tmp/
+
+# IDE/editor files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# OS files
+*.swp
+*~
+.swo
+ehthumbs.db
+Desktop.ini
+
+# Cache & temporary data
+.cache/
+.nyc_output/
+.pnp/
+.pnp.js
+
+# Uploaded files (if any local testing)
+uploads/
+public/uploads/
+tmp/
+temp/
+
+# Postman exports or test data
+*.postman_collection.json
+*.postman_environment.json
