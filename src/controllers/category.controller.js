@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Category from "../models/category.model.js";
-import { uploadToCloudinary } from "../utils/uploadImage.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../utils/uploadImage.js";
+import { sendSuccess } from "../utils/response.js";
 
 /**
  * @desc Create new category
@@ -14,8 +15,10 @@ export const createCategory = asyncHandler(async (req, res) => {
 
   const imageUrl = await uploadToCloudinary(req.file.path);
   const category = await Category.create({ name, image: imageUrl });
-  res.status(201).json(category);
+  res.status(201);
+  sendSuccess(res, category, "Category created successfully");
 });
+
 
 /**
  * @desc Get all categories (with pagination, sorting, filtering)
@@ -34,12 +37,16 @@ export const getCategories = asyncHandler(async (req, res) => {
     .skip((page - 1) * limit)
     .limit(Number(limit));
 
-  res.json({
-    total,
-    page: Number(page),
-    pages: Math.ceil(total / limit),
-    data: categories,
-  });
+  sendSuccess(
+    res,
+    {
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      data: categories,
+    },
+    "Categories retrieved successfully"
+  );
 });
 
 /**
@@ -51,7 +58,7 @@ export const getCategoryById = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Category not found");
   }
-  res.json(category);
+  sendSuccess(res, category, "Category retrieved successfully");
 });
 
 /**
@@ -74,7 +81,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
   if (name) category.name = name;
 
   const updated = await category.save();
-  res.json(updated);
+  sendSuccess(res, updated, "Category updated successfully");
 });
 
 /**
@@ -90,6 +97,5 @@ export const deleteCategory = asyncHandler(async (req, res) => {
   // Delete associated image
   await deleteFromCloudinary(category.image);
   await category.deleteOne();
-
-  res.json({ message: "Category deleted and image removed from Cloudinary" });
+  sendSuccess(res, null, "Category deleted and image removed from Cloudinary");
 });

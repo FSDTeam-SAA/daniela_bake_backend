@@ -4,6 +4,7 @@ import crypto from "crypto";
 import User from "../models/user.model.js";
 import RefreshToken from "../models/refreshToken.model.js";
 import PasswordReset from "../models/passwordReset.model.js";
+import { sendSuccess } from "../utils/response.js";
 
 const signAccess = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "15m" });
 const makeOpaque = () => crypto.randomBytes(48).toString("hex");
@@ -13,7 +14,8 @@ export const register = asyncHandler(async (req, res) => {
   const exists = await User.findOne({ email });
   if (exists) { res.status(400); throw new Error("Email already in use"); }
   const user = await User.create({ name, email, password, role });
-  res.status(201).json({ id: user._id, email: user.email });
+  res.status(201);
+  sendSuccess(res, { id: user._id, email: user.email }, "User registered successfully");
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -26,7 +28,15 @@ export const login = asyncHandler(async (req, res) => {
   const accessToken = signAccess(user._id);
   const refreshToken = makeOpaque();
   await RefreshToken.create({ user: user._id, token: refreshToken, expiresAt: new Date(Date.now()+1000*60*60*24*7) }); // 7 days
-  res.json({ accessToken, refreshToken, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+  sendSuccess(
+    res,
+    {
+      accessToken,
+      refreshToken,
+      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    },
+    "Login successful"
+  );
 });
 
 export const refresh = asyncHandler(async (req, res) => {
@@ -34,13 +44,13 @@ export const refresh = asyncHandler(async (req, res) => {
   const doc = await RefreshToken.findOne({ token: refreshToken });
   if (!doc) { res.status(401); throw new Error("Invalid refresh token"); }
   const accessToken = signAccess(doc.user);
-  res.json({ accessToken });
+  sendSuccess(res, { accessToken }, "Access token refreshed");
 });
 
 export const logout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   await RefreshToken.deleteOne({ token: refreshToken });
-  res.json({ message: "Logged out" });
+  sendSuccess(res, null, "Logged out");
 });
 
 export const changePassword = asyncHandler(async (req, res) => {
@@ -51,7 +61,7 @@ export const changePassword = asyncHandler(async (req, res) => {
   }
   user.password = newPassword;
   await user.save();
-  res.json({ message: "Password updated" });
+  sendSuccess(res, null, "Password updated successfully");
 });
 
 // --- Forgot/Reset via OTP ---
@@ -69,14 +79,14 @@ export const forgotPassword = asyncHandler(async (req, res) => {
     expiresAt: new Date(Date.now()+1000*60*10) // 10 min
   });
   // TODO: send via real email/SMS; for now return it for testing
-  res.json({ message: "OTP generated", otp }); // remove otp in production
+  sendSuccess(res, { otp }, "OTP generated"); // remove otp in production
 });
 
 export const verifyOtp = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
   const entry = await PasswordReset.findOne({ email, otp, used: false });
   if (!entry || entry.expiresAt < new Date()) { res.status(400); throw new Error("OTP invalid or expired"); }
-  res.json({ message: "OTP valid" });
+  sendSuccess(res, null, "OTP valid");
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {
@@ -88,5 +98,5 @@ export const resetPassword = asyncHandler(async (req, res) => {
   entry.used = true; await entry.save();
   // revoke all refresh tokens for security
   await RefreshToken.deleteMany({ user: user._id });
-  res.json({ message: "Password reset successful" });
+  sendSuccess(res, null, "Password reset successful");
 });

@@ -7,7 +7,11 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
-    lastLogin: { type: Date }
+    lastLogin: { type: Date },
+    location: {
+      lat: { type: Number },
+      lng: { type: Number },
+    },
   },
   { timestamps: true }
 );
@@ -21,5 +25,6 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.comparePassword = async function (plain) {
   return bcrypt.compare(plain, this.password);
 };
+
 
 export default mongoose.model("User", userSchema);

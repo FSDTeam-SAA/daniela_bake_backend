@@ -2,6 +2,7 @@ import asyncHandler from "express-async-handler";
 import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { uploadToCloudinary } from "../utils/uploadImage.js";
+import { sendSuccess } from "../utils/response.js";
 
 // ensure a conversation between two users (admin<->user)
 export const getOrCreateConversation = asyncHandler(async (req, res) => {
@@ -10,14 +11,14 @@ export const getOrCreateConversation = asyncHandler(async (req, res) => {
   const b = userId;
   let conv = await Conversation.findOne({ participants: { $all: [a, b] } });
   if (!conv) conv = await Conversation.create({ participants: [a, b], lastMessageAt: new Date() });
-  res.json(conv);
+  sendSuccess(res, conv, "Conversation ready");
 });
 
 export const listConversations = asyncHandler(async (req, res) => {
   const convs = await Conversation.find({ participants: req.user._id })
     .sort("-updatedAt")
     .populate("participants", "name email role");
-  res.json(convs);
+  sendSuccess(res, convs, "Conversations fetched successfully");
 });
 
 export const getMessages = asyncHandler(async (req, res) => {
@@ -28,7 +29,7 @@ export const getMessages = asyncHandler(async (req, res) => {
     .limit(Number(limit))
     .populate("sender", "name role")
     .populate("receiver", "name role");
-  res.json(messages.reverse());
+  sendSuccess(res, messages.reverse(), "Messages fetched successfully");
 });
 
 export const sendMessage = asyncHandler(async (req, res) => {
@@ -54,7 +55,8 @@ export const sendMessage = asyncHandler(async (req, res) => {
   // emit via socket.io if available
   req.io?.to(receiverId.toString()).emit("message:new", { message: msg });
 
-  res.status(201).json(msg);
+  res.status(201);
+  sendSuccess(res, msg, "Message sent successfully");
 });
 
 export const markRead = asyncHandler(async (req, res) => {
@@ -64,5 +66,5 @@ export const markRead = asyncHandler(async (req, res) => {
     { $set: { readAt: new Date() } }
   );
   req.io?.to(conversationId).emit("message:read", { conversationId, userId: req.user._id });
-  res.json({ message: "Read" });
+  sendSuccess(res, null, "Messages marked as read");
 });

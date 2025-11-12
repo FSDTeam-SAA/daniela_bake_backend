@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Review from "../models/review.model.js";
 import Item from "../models/item.model.js";
+import { sendSuccess } from "../utils/response.js";
 
 /**
  * @desc Add or update review
@@ -27,7 +28,7 @@ export const addOrUpdateReview = asyncHandler(async (req, res) => {
 
   await Item.findByIdAndUpdate(itemId, { rating: avgRating, reviewsCount: count });
 
-  res.json(review);
+  sendSuccess(res, review, "Review saved successfully");
 });
 
 /**
@@ -38,7 +39,7 @@ export const getReviewsByItem = asyncHandler(async (req, res) => {
   const reviews = await Review.find({ item: req.params.itemId })
     .populate("user", "name email")
     .sort("-createdAt");
-  res.json(reviews);
+  sendSuccess(res, reviews, "Reviews retrieved successfully");
 });
 
 /**
@@ -53,5 +54,5 @@ export const deleteReview = asyncHandler(async (req, res) => {
   }
 
   await review.deleteOne();
-  res.json({ message: "Review deleted" });
+  sendSuccess(res, null, "Review deleted successfully");
 });

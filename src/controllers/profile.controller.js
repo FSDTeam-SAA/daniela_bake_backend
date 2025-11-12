@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Profile from "../models/profile.model.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/uploadImage.js";
+import { sendSuccess } from "../utils/response.js";
 
 /**
  * @desc Create or update user profile
@@ -33,7 +34,7 @@ export const upsertProfile = asyncHandler(async (req, res) => {
   if (phone) profile.phone = phone;
 
   const updated = await profile.save();
-  res.json(updated);
+  sendSuccess(res, updated, "Profile saved successfully");
 });
 
 /**
@@ -46,7 +47,7 @@ export const getProfile = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Profile not found");
   }
-  res.json(profile);
+  sendSuccess(res, profile, "Profile retrieved successfully");
 });
 
 /**
@@ -65,5 +66,5 @@ export const deleteProfile = asyncHandler(async (req, res) => {
   }
 
   await profile.deleteOne();
-  res.json({ message: "Profile deleted successfully" });
+  sendSuccess(res, null, "Profile deleted successfully");
 });

@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Order from "../models/order.model.js";
 import Cart from "../models/cart.model.js";
+import { sendSuccess } from "../utils/response.js";
 
 /**
  * @desc Create order from cart
@@ -30,7 +31,8 @@ export const createOrder = asyncHandler(async (req, res) => {
   cart.total = 0;
   await cart.save();
 
-  res.status(201).json(order);
+  res.status(201);
+  sendSuccess(res, order, "Order created successfully");
 });
 
 /**
@@ -50,12 +52,16 @@ export const getOrders = asyncHandler(async (req, res) => {
     .skip((page - 1) * limit)
     .limit(Number(limit));
 
-  res.json({
-    total,
-    page: Number(page),
-    pages: Math.ceil(total / limit),
-    data: orders,
-  });
+  sendSuccess(
+    res,
+    {
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      orders,
+    },
+    "Orders retrieved successfully"
+  );
 });
 
 /**
@@ -71,7 +77,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
     throw new Error("Order not found");
   }
 
-  res.json(order);
+  sendSuccess(res, order, "Order retrieved successfully");
 });
 
 /**
@@ -89,7 +95,7 @@ export const updateOrder = asyncHandler(async (req, res) => {
   if (paymentStatus) order.paymentStatus = paymentStatus;
 
   const updated = await order.save();
-  res.json(updated);
+  sendSuccess(res, updated, "Order updated successfully");
 });
 
 /**
@@ -103,5 +109,5 @@ export const deleteOrder = asyncHandler(async (req, res) => {
   }
 
   await order.deleteOne();
-  res.json({ message: "Order deleted successfully" });
+  sendSuccess(res, null, "Order deleted successfully");
 });

@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
+import { sendSuccess } from "../utils/response.js";
 
 /**
  * @desc Get all users (filter, pagination)
@@ -18,12 +19,16 @@ export const getUsers = asyncHandler(async (req, res) => {
     .skip((page - 1) * limit)
     .limit(Number(limit));
 
-  res.json({
-    total,
-    page: Number(page),
-    pages: Math.ceil(total / limit),
-    data: users,
-  });
+  sendSuccess(
+    res,
+    {
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      users,
+    },
+    "Users retrieved successfully"
+  );
 });
 
 /**
@@ -35,7 +40,7 @@ export const getUserById = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-  res.json(user);
+  sendSuccess(res, user, "User retrieved successfully");
 });
 
 /**
@@ -56,7 +61,7 @@ export const updateUser = asyncHandler(async (req, res) => {
   if (password) user.password = await bcrypt.hash(password, 10);
 
   const updated = await user.save();
-  res.json(updated);
+  sendSuccess(res, updated, "User updated successfully");
 });
 
 /**
@@ -69,5 +74,5 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
   await user.deleteOne();
-  res.json({ message: "User removed successfully" });
+  sendSuccess(res, null, "User removed successfully");
 });

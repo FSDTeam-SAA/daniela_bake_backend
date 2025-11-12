@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Item from "../models/item.model.js";
-import { uploadToCloudinary } from "../utils/uploadImage.js";
+import { uploadToCloudinary, deleteFromCloudinary } from "../utils/uploadImage.js";
+import { sendSuccess } from "../utils/response.js";
 
 /**
  * @desc Create item
@@ -24,7 +25,8 @@ export const createItem = asyncHandler(async (req, res) => {
     ingredients: parsedIngredients,
   });
 
-  res.status(201).json(item);
+  res.status(201);
+  sendSuccess(res, item, "Item created successfully");
 });
 
 /**
@@ -58,12 +60,16 @@ export const getItems = asyncHandler(async (req, res) => {
     .skip((page - 1) * limit)
     .limit(Number(limit));
 
-  res.json({
-    total,
-    page: Number(page),
-    pages: Math.ceil(total / limit),
-    data: items,
-  });
+  sendSuccess(
+    res,
+    {
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / limit),
+      items,
+    },
+    "Items retrieved successfully"
+  );
 });
 
 /**
@@ -75,7 +81,7 @@ export const getItemById = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Item not found");
   }
-  res.json(item);
+  sendSuccess(res, item, "Item retrieved successfully");
 });
 
 /**
@@ -103,7 +109,7 @@ export const updateItem = asyncHandler(async (req, res) => {
   if (ingredients) item.ingredients = JSON.parse(ingredients);
 
   const updated = await item.save();
-  res.json(updated);
+  sendSuccess(res, updated, "Item updated successfully");
 });
 
 /**
@@ -119,5 +125,5 @@ export const deleteItem = asyncHandler(async (req, res) => {
   await deleteFromCloudinary(item.image);
   await item.deleteOne();
 
-  res.json({ message: "Item deleted and image removed from Cloudinary" });
+  sendSuccess(res, null, "Item deleted and image removed from Cloudinary");
 });

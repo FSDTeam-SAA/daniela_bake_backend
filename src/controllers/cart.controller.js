@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import Cart from "../models/cart.model.js";
 import Item from "../models/item.model.js";
+import { sendSuccess } from "../utils/response.js";
 
 /**
  * @desc Add item to cart
@@ -31,7 +32,8 @@ export const addToCart = asyncHandler(async (req, res) => {
   cart.total = await calculateCartTotal(cart.items);
 
   await cart.save();
-  res.status(200).json(cart);
+  res.status(200);
+  sendSuccess(res, cart, "Item added to cart");
 });
 
 /**
@@ -44,7 +46,7 @@ export const getCart = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Cart not found");
   }
-  res.json(cart);
+  sendSuccess(res, cart, "Cart retrieved successfully");
 });
 
 /**
@@ -68,7 +70,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
   item.quantity = quantity;
   cart.total = await calculateCartTotal(cart.items);
   await cart.save();
-  res.json(cart);
+  sendSuccess(res, cart, "Cart item updated successfully");
 });
 
 /**
@@ -87,7 +89,7 @@ export const removeCartItem = asyncHandler(async (req, res) => {
   cart.total = await calculateCartTotal(cart.items);
 
   await cart.save();
-  res.json(cart);
+  sendSuccess(res, cart, "Cart item removed successfully");
 });
 
 /**
@@ -106,7 +108,7 @@ export const clearCart = asyncHandler(async (req, res) => {
   cart.total = 0;
   await cart.save();
 
-  res.json({ message: "Cart cleared successfully" });
+  sendSuccess(res, null, "Cart cleared successfully");
 });
 
 // Helper to recalc total
