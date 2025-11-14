@@ -41,11 +41,33 @@ export const login = asyncHandler(async (req, res) => {
 
 export const refresh = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
-  const doc = await RefreshToken.findOne({ token: refreshToken });
-  if (!doc) { res.status(401); throw new Error("Invalid refresh token"); }
-  const accessToken = signAccess(doc.user);
-  sendSuccess(res, { accessToken }, "Access token refreshed");
+  const old = await RefreshToken.findOne({ token: refreshToken });
+
+  if (!old || old.expiresAt < new Date()) {
+    res.status(401);
+    throw new Error("Invalid refresh token");
+  }
+
+  // generate new tokens
+  const accessToken = signAccess(old.user);
+  const newRefreshToken = makeOpaque();
+
+  // delete old token (rotation)
+  await RefreshToken.deleteOne({ token: refreshToken });
+
+  // save new refresh token
+  await RefreshToken.create({
+    user: old.user,
+    token: newRefreshToken,
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  });
+
+  sendSuccess(res, {
+    accessToken,
+    refreshToken: newRefreshToken
+  }, "Tokens refreshed");
 });
+
 
 export const logout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
