@@ -8,9 +8,10 @@ const profileSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    avatar: {
-      url: { type: String, default: "" },
-      public_id: { type: String, default: "" },
+    avatarUrl: {
+      type: String,
+      default: "",
+      trim: true,
     },
     fullName: {
       type: String,

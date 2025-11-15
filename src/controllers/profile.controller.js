@@ -18,16 +18,15 @@ export const upsertProfile = asyncHandler(async (req, res) => {
   }
 
   if (req.file) {
-    // delete old avatar if exists
-    if (profile.avatar?.public_id) {
-      await deleteFromCloudinary(profile.avatar.public_id);
+    // delete old avatar if exists (derives public id from URL)
+    if (profile.avatarUrl) {
+      await deleteFromCloudinary(profile.avatarUrl);
     }
 
-    const result = await uploadToCloudinary(req.file.path);
-    profile.avatar = {
-      url: result.url,
-      public_id: result.public_id,
-    };
+    const uploadedUrl = await uploadToCloudinary(req.file.path);
+    if (uploadedUrl) {
+      profile.avatarUrl = uploadedUrl;
+    }
   }
 
   if (fullName) profile.fullName = fullName;
@@ -61,8 +60,8 @@ export const deleteProfile = asyncHandler(async (req, res) => {
     throw new Error("Profile not found");
   }
 
-  if (profile.avatar?.public_id) {
-    await deleteFromCloudinary(profile.avatar.public_id);
+  if (profile.avatarUrl) {
+    await deleteFromCloudinary(profile.avatarUrl);
   }
 
   await profile.deleteOne();
