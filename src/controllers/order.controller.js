@@ -65,6 +65,53 @@ export const getOrders = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc Get orders for the authenticated user with optional filter shortcuts
+ * @route GET /api/v1/orders/my?filter=ongoing
+ */
+export const getMyOrders = asyncHandler(async (req, res) => {
+  const { filter, page = 1, limit = 10, sort = "-createdAt" } = req.query;
+  const pageNum = Number(page);
+  const limitNum = Number(limit);
+
+  const userId = req.user?._id;
+  if (!userId) {
+    res.status(401);
+    throw new Error("Not authorized");
+  }
+
+  const filterMap = {
+    ongoing: ["Pending", "Processing"],
+    completed: ["Delivered"],
+  };
+
+  const query = { user: userId };
+  if (filter && filterMap[filter]) {
+    const statuses = filterMap[filter];
+    query.status = statuses.length > 1 ? { $in: statuses } : statuses[0];
+  } else if (filter) {
+    query.status = filter;
+  }
+
+  const total = await Order.countDocuments(query);
+  const orders = await Order.find(query)
+    .populate("items.item", "name price image")
+    .sort(sort)
+    .skip((pageNum - 1) * limitNum)
+    .limit(limitNum);
+
+  sendSuccess(
+    res,
+    {
+      total,
+      page: pageNum,
+      pages: Math.ceil(total / limitNum),
+      orders,
+    },
+    "User orders retrieved successfully"
+  );
+});
+
+/**
  * @desc Get order by ID
  */
 export const getOrderById = asyncHandler(async (req, res) => {
