@@ -7,8 +7,12 @@ const categorySchema = new mongoose.Schema(
       required: [true, "Category name is required"],
     },
     image: {
-      type: String, // URL or image filename
+      type: String,
       required: [true, "Category image is required"],
+    },
+    bgColor: {
+      type: String,
+      default: "#ffffff",
     },
   },
   { timestamps: true }

@@ -7,17 +7,30 @@ import { sendSuccess } from "../utils/response.js";
  * @desc Create new category
  */
 export const createCategory = asyncHandler(async (req, res) => {
-  const { name } = req.body;
+  const { name, bgColor } = req.body;
+
   if (!req.file) {
     res.status(400);
     throw new Error("Category image is required");
   }
 
+  if (!bgColor) {
+    res.status(400);
+    throw new Error("Background color is required");
+  }
+
   const imageUrl = await uploadToCloudinary(req.file.path);
-  const category = await Category.create({ name, image: imageUrl });
+
+  const category = await Category.create({
+    name,
+    image: imageUrl,
+    bgColor,
+  });
+
   res.status(201);
   sendSuccess(res, category, "Category created successfully");
 });
+
 
 
 /**
@@ -65,7 +78,8 @@ export const getCategoryById = asyncHandler(async (req, res) => {
  * @desc Update category
  */
 export const updateCategory = asyncHandler(async (req, res) => {
-  const { name } = req.body;
+  const { name, bgColor } = req.body;
+
   const category = await Category.findById(req.params.id);
   if (!category) {
     res.status(404);
@@ -73,16 +87,17 @@ export const updateCategory = asyncHandler(async (req, res) => {
   }
 
   if (req.file) {
-    // Delete old image first
     await deleteFromCloudinary(category.image);
     category.image = await uploadToCloudinary(req.file.path);
   }
 
   if (name) category.name = name;
+  if (bgColor) category.bgColor = bgColor;
 
   const updated = await category.save();
   sendSuccess(res, updated, "Category updated successfully");
 });
+
 
 /**
  * @desc Delete category

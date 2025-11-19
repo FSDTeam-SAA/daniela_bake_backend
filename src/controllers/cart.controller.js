@@ -41,7 +41,7 @@ export const addToCart = asyncHandler(async (req, res) => {
  */
 export const getCart = asyncHandler(async (req, res) => {
   const { userId } = req.params;
-  const cart = await Cart.findOne({ user: userId }).populate("items.item", "name price image");
+  const cart = await Cart.findOne({ user: userId }).populate("items.item", "name description price image");
   if (!cart) {
     res.status(404);
     throw new Error("Cart not found");
