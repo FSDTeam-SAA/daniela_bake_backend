@@ -47,7 +47,7 @@ export const getOrders = asyncHandler(async (req, res) => {
   const total = await Order.countDocuments(query);
   const orders = await Order.find(query)
     .populate("user", "name email")
-    .populate("items.item", "name price image")
+    .populate("items.item", "name description price image")
     .sort(sort)
     .skip((page - 1) * limit)
     .limit(Number(limit));
@@ -94,7 +94,7 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 
   const total = await Order.countDocuments(query);
   const orders = await Order.find(query)
-    .populate("items.item", "name price image")
+    .populate("items.item", "name description price image")
     .sort(sort)
     .skip((pageNum - 1) * limitNum)
     .limit(limitNum);
@@ -117,7 +117,7 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 export const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id)
     .populate("user", "name email")
-    .populate("items.item", "name price image");
+    .populate("items.item", "name description price image");
 
   if (!order) {
     res.status(404);

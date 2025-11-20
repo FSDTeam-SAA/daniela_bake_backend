@@ -25,7 +25,7 @@ export const addFavorite = asyncHandler(async (req, res) => {
  * @route GET /api/v1/favorites/:userId
  */
 export const getFavorites = asyncHandler(async (req, res) => {
-  const favorites = await Favorite.find({ user: req.params.userId }).populate("item", "name price image category");
+  const favorites = await Favorite.find({ user: req.params.userId }).populate("item", "name description price image category");
   sendSuccess(res, favorites, "Favorites retrieved successfully");
 });
 
