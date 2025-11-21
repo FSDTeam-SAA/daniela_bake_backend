@@ -74,6 +74,40 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc Reduce cart item quantity by 1
+ */
+export const reduceCartQuantity = asyncHandler(async (req, res) => {
+  const { userId, itemId } = req.body;
+
+  const cart = await Cart.findOne({ user: userId });
+  if (!cart) {
+    res.status(404);
+    throw new Error("Cart not found");
+  }
+
+  const cartItem = cart.items.find((i) => i.item.toString() === itemId);
+  if (!cartItem) {
+    res.status(404);
+    throw new Error("Item not in cart");
+  }
+
+  // Reduce quantity
+  if (cartItem.quantity > 1) {
+    cartItem.quantity -= 1;
+  } else {
+    // If quantity would go below 1 → remove item
+    cart.items = cart.items.filter((i) => i.item.toString() !== itemId);
+  }
+
+  // Recalculate total
+  cart.total = await calculateCartTotal(cart.items);
+  await cart.save();
+
+  sendSuccess(res, cart, "Item quantity reduced successfully");
+});
+
+
+/**
  * @desc Remove item from cart
  */
 export const removeCartItem = asyncHandler(async (req, res) => {
