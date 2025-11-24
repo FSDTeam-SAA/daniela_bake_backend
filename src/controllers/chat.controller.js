@@ -34,8 +34,8 @@ export const getMessages = asyncHandler(async (req, res) => {
     .sort("-createdAt")
     .skip((page - 1) * limit)
     .limit(Number(limit))
-    .populate("sender", "name role")
-    .populate("receiver", "name role");
+    // .populate("sender", "name role")
+    // .populate("receiver", "name role");
   sendSuccess(res, messages.reverse(), "Messages fetched successfully");
 });
 
