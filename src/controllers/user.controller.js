@@ -60,12 +60,24 @@ export const getUsers = asyncHandler(async (req, res) => {
  * @desc Get single user
  */
 export const getUserById = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.params.id).select("-password");
+  const user = await User.findById(req.params.id).select("-password").lean();
   if (!user) {
     res.status(404);
     throw new Error("User not found");
   }
-  sendSuccess(res, user, "User retrieved successfully");
+
+  const orders = await Order.find({ user: user._id })
+    .populate("items.item", "name price image")
+    .lean();
+
+  sendSuccess(
+    res,
+    {
+      ...user,
+      orders,
+    },
+    "User retrieved successfully"
+  );
 });
 
 /**
