@@ -53,11 +53,18 @@ export const sendMessage = asyncHandler(async (req, res) => {
 
   await Conversation.findByIdAndUpdate(conversationId, { lastMessageAt: new Date() });
 
+  const messageData = msg.toObject();
+  const socketPayload = {
+    success: true,
+    message: "Message sent successfully",
+    data: messageData,
+  };
+
   // emit via socket.io if available
-  io.to(conversationId.toString()).emit("message", { message: msg });
+  io.to(conversationId.toString()).emit("message", socketPayload);
 
   res.status(201);
-  sendSuccess(res, msg, "Message sent successfully");
+  sendSuccess(res, messageData, "Message sent successfully");
 });
 
 export const markRead = asyncHandler(async (req, res) => {
