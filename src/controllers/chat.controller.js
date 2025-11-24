@@ -5,6 +5,12 @@ import { uploadToCloudinary } from "../utils/uploadImage.js";
 import { sendSuccess } from "../utils/response.js";
 import { io } from "../server.js";
 
+const buildSuccessPayload = (data, message) => ({
+  success: true,
+  message,
+  data,
+});
+
 // ensure a conversation between two users (admin<->user)
 export const getOrCreateConversation = asyncHandler(async (req, res) => {
   const { userId } = req.body; // target user id (if admin) or admin id (if user)
@@ -53,18 +59,20 @@ export const sendMessage = asyncHandler(async (req, res) => {
 
   await Conversation.findByIdAndUpdate(conversationId, { lastMessageAt: new Date() });
 
+  await msg.populate([
+    { path: "sender", select: "name role" },
+    { path: "receiver", select: "name role" },
+  ]);
+
   const messageData = msg.toObject();
-  const socketPayload = {
-    success: true,
-    message: "Message sent successfully",
-    data: messageData,
-  };
+  const responseData = [messageData];
+  const socketPayload = buildSuccessPayload(responseData, "Message sent successfully");
 
   // emit via socket.io if available
   io.to(conversationId.toString()).emit("message", socketPayload);
 
   res.status(201);
-  sendSuccess(res, messageData, "Message sent successfully");
+  sendSuccess(res, responseData, "Message sent successfully");
 });
 
 export const markRead = asyncHandler(async (req, res) => {
@@ -73,6 +81,8 @@ export const markRead = asyncHandler(async (req, res) => {
     { conversation: conversationId, receiver: req.user._id, readAt: { $exists: false } },
     { $set: { readAt: new Date() } }
   );
-  req.io?.to(conversationId).emit("message:read", { conversationId, userId: req.user._id });
-  sendSuccess(res, null, "Messages marked as read");
+  const data = { conversationId, userId: req.user._id };
+  const payload = buildSuccessPayload(data, "Messages marked as read");
+  req.io?.to(conversationId).emit("message:read", payload);
+  sendSuccess(res, data, "Messages marked as read");
 });
