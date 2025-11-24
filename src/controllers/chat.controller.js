@@ -3,6 +3,7 @@ import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { uploadToCloudinary } from "../utils/uploadImage.js";
 import { sendSuccess } from "../utils/response.js";
+import { io } from "../server.js";
 
 // ensure a conversation between two users (admin<->user)
 export const getOrCreateConversation = asyncHandler(async (req, res) => {
@@ -53,7 +54,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
   await Conversation.findByIdAndUpdate(conversationId, { lastMessageAt: new Date() });
 
   // emit via socket.io if available
-  req.io?.to(conversationId.toString()).emit("message:new", { message: msg });
+  io.to(conversationId.toString()).emit("message", { message: msg });
 
   res.status(201);
   sendSuccess(res, msg, "Message sent successfully");
