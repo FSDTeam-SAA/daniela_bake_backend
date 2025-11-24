@@ -2,15 +2,21 @@ import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
 import Order from "../models/order.model.js";
+import Profile from "../models/profile.model.js";
 import { sendSuccess } from "../utils/response.js";
 
 const attachOrdersToUsers = async (users) => {
   if (!users.length) return users;
 
   const userIds = users.map((user) => user._id);
-  const orders = await Order.find({ user: { $in: userIds } })
-    .populate("items.item", "name price image")
-    .lean();
+  const [orders, profiles] = await Promise.all([
+    Order.find({ user: { $in: userIds } })
+      .populate("items.item", "name price image")
+      .lean(),
+    Profile.find({ user: { $in: userIds } })
+      .select("user avatarUrl phone")
+      .lean(),
+  ]);
 
   const ordersByUser = orders.reduce((acc, order) => {
     const key = order.user.toString();
@@ -19,9 +25,16 @@ const attachOrdersToUsers = async (users) => {
     return acc;
   }, {});
 
+  const profileByUser = profiles.reduce((acc, profile) => {
+    acc[profile.user.toString()] = profile;
+    return acc;
+  }, {});
+
   return users.map((user) => ({
     ...user,
     orders: ordersByUser[user._id.toString()] || [],
+    avatar: profileByUser[user._id.toString()]?.avatarUrl || null,
+    phone: profileByUser[user._id.toString()]?.phone || null,
   }));
 };
 
