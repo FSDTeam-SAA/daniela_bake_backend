@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getUsers,
+  getAdminUsers,
   getUserById,
   updateUser,
   deleteUser,
@@ -10,6 +11,8 @@ const router = express.Router();
 
 router.route("/")
   .get(getUsers);
+
+router.get("/admin", getAdminUsers);
 
 router.route("/:id")
   .get(getUserById)

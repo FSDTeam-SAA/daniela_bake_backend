@@ -1,7 +1,29 @@
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
+import Order from "../models/order.model.js";
 import { sendSuccess } from "../utils/response.js";
+
+const attachOrdersToUsers = async (users) => {
+  if (!users.length) return users;
+
+  const userIds = users.map((user) => user._id);
+  const orders = await Order.find({ user: { $in: userIds } })
+    .populate("items.item", "name price image")
+    .lean();
+
+  const ordersByUser = orders.reduce((acc, order) => {
+    const key = order.user.toString();
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(order);
+    return acc;
+  }, {});
+
+  return users.map((user) => ({
+    ...user,
+    orders: ordersByUser[user._id.toString()] || [],
+  }));
+};
 
 /**
  * @desc Get all users (filter, pagination)
@@ -17,7 +39,10 @@ export const getUsers = asyncHandler(async (req, res) => {
   const users = await User.find(query)
     .sort(sort)
     .skip((page - 1) * limit)
-    .limit(Number(limit));
+    .limit(Number(limit))
+    .lean();
+
+  const usersWithOrders = await attachOrdersToUsers(users);
 
   sendSuccess(
     res,
@@ -25,7 +50,7 @@ export const getUsers = asyncHandler(async (req, res) => {
       total,
       page: Number(page),
       pages: Math.ceil(total / limit),
-      users,
+      users: usersWithOrders,
     },
     "Users retrieved successfully"
   );
@@ -75,4 +100,13 @@ export const deleteUser = asyncHandler(async (req, res) => {
   }
   await user.deleteOne();
   sendSuccess(res, null, "User removed successfully");
+});
+
+/**
+ * @desc Get admin users
+ */
+export const getAdminUsers = asyncHandler(async (_req, res) => {
+  const admins = await User.find({ role: "admin" }).sort("-createdAt").lean();
+  const adminsWithOrders = await attachOrdersToUsers(admins);
+  sendSuccess(res, adminsWithOrders, "Admin users retrieved successfully");
 });
