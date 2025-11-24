@@ -38,6 +38,7 @@ export const getItems = asyncHandler(async (req, res) => {
     limit = 10,
     sort = "-createdAt",
     category,
+    search,
     minPrice,
     maxPrice,
     name,
@@ -47,6 +48,14 @@ export const getItems = asyncHandler(async (req, res) => {
 
   if (category) query.category = category;
   if (name) query.name = { $regex: name, $options: "i" };
+  if (search) {
+    const regex = new RegExp(search, "i");
+    query.$or = [
+      { name: regex },
+      { description: regex },
+      { "ingredients.name": regex },
+    ];
+  }
   if (minPrice || maxPrice) {
     query.price = {};
     if (minPrice) query.price.$gte = Number(minPrice);
