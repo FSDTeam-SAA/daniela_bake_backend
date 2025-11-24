@@ -53,7 +53,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
   await Conversation.findByIdAndUpdate(conversationId, { lastMessageAt: new Date() });
 
   // emit via socket.io if available
-  req.io?.to(receiverId.toString()).emit("message:new", { message: msg });
+  req.io?.to(conversationId.toString()).emit("message:new", { message: msg });
 
   res.status(201);
   sendSuccess(res, msg, "Message sent successfully");

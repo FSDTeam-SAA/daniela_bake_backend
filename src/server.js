@@ -20,10 +20,10 @@ app.use((req, _res, next) => { req.io = io; next(); });
 
 // socket auth is minimal here (pass userId after login)
 io.on("connection", (socket) => {
-  const { userId } = socket.handshake.query;
-  if (userId) {
-    socket.join(userId); // personal room for direct messages
+  socket.on("join", (room) => {
+    socket.join(room);
   }
+);
   socket.on("disconnect", () => {});
 });
 
