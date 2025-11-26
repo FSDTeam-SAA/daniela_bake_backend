@@ -9,9 +9,22 @@ connectDB();
 
 const port = process.env.PORT || 3000;
 const server = http.createServer(app);
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 export const io = new Server(server, {
-  cors: { origin: process.env.CLIENT_ORIGIN || "*", methods: ["GET","POST"] }
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || !allowedOrigins.length || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Socket origin not allowed"));
+    },
+    credentials: true,
+    methods: ["GET", "POST"],
+  },
 });
 
 app.use((req, _res, next) => { req.io = io; next(); });
@@ -20,8 +33,7 @@ app.use((req, _res, next) => { req.io = io; next(); });
 io.on("connection", (socket) => {
   socket.on("join", (room) => {
     socket.join(room);
-  }
-);
+  });
   socket.on("disconnect", () => {});
 });
 

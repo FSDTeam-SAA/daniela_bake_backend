@@ -43,7 +43,7 @@ const attachOrdersToUsers = async (users) => {
  */
 export const getUsers = asyncHandler(async (req, res) => {
   let { page = 1, limit = 10, sort = "-createdAt", name, email } = req.query;
-  const query = {};
+  const query = {}; 
 
   if (name) query.name = { $regex: name, $options: "i" };
   if (email) query.email = { $regex: email, $options: "i" };
