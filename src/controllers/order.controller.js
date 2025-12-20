@@ -15,13 +15,30 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Cart is empty");
   }
 
+  // Filter out cart entries whose referenced items were removed or deleted
+  const validCartItems = cart.items.filter((cartItem) => Boolean(cartItem.item));
+  if (validCartItems.length === 0) {
+    cart.items = [];
+    cart.total = 0;
+    await cart.save();
+    res.status(400);
+    throw new Error(
+      "Cart items are no longer available. Please add new items to proceed."
+    );
+  }
+
+  const totalAmount = validCartItems.reduce(
+    (sum, cartItem) => sum + cartItem.item.price * cartItem.quantity,
+    0
+  );
+
   const order = await Order.create({
     user: userId,
-    items: cart.items.map((i) => ({
-      item: i.item._id,
-      quantity: i.quantity,
+    items: validCartItems.map((cartItem) => ({
+      item: cartItem.item._id,
+      quantity: cartItem.quantity,
     })),
-    totalAmount: cart.total,
+    totalAmount,
     address,
     phone,
   });
