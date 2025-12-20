@@ -9,6 +9,7 @@ import profileRoutes from "./routes/profile.routes.js";
 import favoriteRoutes from "./routes/favorite.routes.js";
 import reviewRoutes from "./routes/review.routes.js";
 import chatRoutes from "./routes/chat.routes.js";
+import dashboardRoutes from "./routes/dashboard.routes.js";
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use("/profile", profileRoutes);
 router.use("/favorites", favoriteRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/chat", chatRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 export default router;
