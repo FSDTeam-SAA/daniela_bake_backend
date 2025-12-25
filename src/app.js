@@ -8,10 +8,19 @@ dotenv.config();
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_ORIGIN || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const devOrigins = ["http://localhost:3000", "http://localhost:3001"];
+const prodOrigins = ["https://admin.danielabakehousebakery.com"];
+const allowedOrigins = [
+  ...new Set(
+    [
+      ...devOrigins,
+      ...prodOrigins,
+      ...(process.env.CLIENT_ORIGIN || "").split(","),
+    ]
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+  ),
+];
 
 const corsOptions = {
   origin: (origin, callback) => {
