@@ -4,6 +4,28 @@ import { uploadToCloudinary, deleteFromCloudinary } from "../utils/uploadImage.j
 import { sendSuccess } from "../utils/response.js";
 
 const DAY_LABELS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const DAY_SYNONYMS = {
+  sunday: "sun",
+  sun: "sun",
+  monday: "mon",
+  mon: "mon",
+  tuesday: "tue",
+  tue: "tue",
+  wednesday: "wed",
+  wed: "wed",
+  thursday: "thu",
+  thu: "thu",
+  friday: "fri",
+  fri: "fri",
+  saturday: "sat",
+  sat: "sat",
+};
+
+const normalizeDay = (value) => {
+  if (!value) return null;
+  const key = value.toString().trim().toLowerCase();
+  return DAY_SYNONYMS[key] || null;
+};
 
 const parseAvailableDays = (value) => {
   if (value === undefined || value === null || value === "") return null;
@@ -23,7 +45,8 @@ const parseAvailableDays = (value) => {
 
   const normalized = days
     .filter(Boolean)
-    .map((d) => d.toString().toLowerCase());
+    .map((d) => normalizeDay(d))
+    .filter(Boolean);
 
   const invalid = normalized.filter((d) => !DAY_LABELS.includes(d));
   if (invalid.length) {
@@ -95,9 +118,9 @@ export const getItems = asyncHandler(async (req, res) => {
 
   if (dayParam !== "all") {
     const resolvedDay =
-      dayParam === "today" ? getTodayDayLabel() : dayParam.toLowerCase();
+      dayParam === "today" ? getTodayDayLabel() : normalizeDay(dayParam);
 
-    if (!DAY_LABELS.includes(resolvedDay)) {
+    if (!resolvedDay || !DAY_LABELS.includes(resolvedDay)) {
       res.status(400);
       throw new Error(
         `Invalid day. Use ${DAY_LABELS.join(
@@ -109,6 +132,7 @@ export const getItems = asyncHandler(async (req, res) => {
     filters.push({
       $or: [
         { availableDays: resolvedDay },
+        { availableDays: { $elemMatch: { $regex: `^${resolvedDay}$`, $options: "i" } } },
         { availableDays: { $exists: false } },
         { availableDays: { $size: 0 } },
       ],
