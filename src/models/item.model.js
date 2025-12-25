@@ -38,8 +38,20 @@ const itemSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    availableDays: {
+      type: [
+        {
+          type: String,
+          enum: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+        },
+      ],
+      default: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+      required: true,
+    },
   },
   { timestamps: true }
 );
+
+itemSchema.index({ availableDays: 1 });
 
 export default mongoose.model("Item", itemSchema);
