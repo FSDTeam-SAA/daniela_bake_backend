@@ -12,11 +12,23 @@ const router = express.Router();
 
 router.route("/")
   .get(getItems)
-  .post(upload.single("image"), createItem);
+  .post(
+    upload.fields([
+      { name: "image", maxCount: 1 },
+      { name: "ingredientImage", maxCount: 20 },
+    ]),
+    createItem
+  );
 
 router.route("/:id")
   .get(getItemById)
-  .put(upload.single("image"), updateItem)
+  .put(
+    upload.fields([
+      { name: "image", maxCount: 1 },
+      { name: "ingredientImage", maxCount: 20 },
+    ]),
+    updateItem
+  )
   .delete(deleteItem);
 
 export default router;

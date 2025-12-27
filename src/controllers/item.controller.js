@@ -62,18 +62,43 @@ const parseAvailableDays = (value) => {
 
 const getTodayDayLabel = () => DAY_LABELS[new Date().getDay()];
 
+const parseIngredients = (ingredients) => {
+  if (!ingredients) return [];
+  if (Array.isArray(ingredients)) return ingredients;
+  return JSON.parse(ingredients);
+};
+
+const attachIngredientImages = async (ingredientsList, imageFiles) => {
+  if (!ingredientsList?.length || !imageFiles?.length) return ingredientsList;
+  const uploaded = await Promise.all(
+    imageFiles.map((file) => uploadToCloudinary(file.path))
+  );
+
+  return ingredientsList.map((ingredient, index) => {
+    const imageUrl = uploaded[index];
+    if (!imageUrl) return ingredient;
+    return { ...ingredient, image: imageUrl };
+  });
+};
+
 /**
  * @desc Create item
  */
 export const createItem = asyncHandler(async (req, res) => {
   const { name, description, price, category, ingredients } = req.body;
-  if (!req.file) {
+  const itemImageFile = req.files?.image?.[0] || req.file;
+  if (!itemImageFile) {
     res.status(400);
     throw new Error("Image is required");
   }
 
-  const imageUrl = await uploadToCloudinary(req.file.path);
-  const parsedIngredients = ingredients ? JSON.parse(ingredients) : [];
+  const imageUrl = await uploadToCloudinary(itemImageFile.path);
+  const parsedIngredients = parseIngredients(ingredients);
+  const ingredientImages = req.files?.ingredientImage || [];
+  const ingredientsWithImages = await attachIngredientImages(
+    parsedIngredients,
+    ingredientImages
+  );
   let parsedAvailableDays = null;
   try {
     parsedAvailableDays = parseAvailableDays(req.body.availableDays);
@@ -88,7 +113,7 @@ export const createItem = asyncHandler(async (req, res) => {
     price,
     image: imageUrl,
     category,
-    ingredients: parsedIngredients,
+    ingredients: ingredientsWithImages,
     ...(parsedAvailableDays ? { availableDays: parsedAvailableDays } : {}),
   });
 
@@ -203,17 +228,36 @@ export const updateItem = asyncHandler(async (req, res) => {
 
   const { name, description, price, category, ingredients } = req.body;
 
-  if (req.file) {
+  const itemImageFile = req.files?.image?.[0] || req.file;
+  if (itemImageFile) {
     // Delete old image before uploading new one
     await deleteFromCloudinary(item.image);
-    item.image = await uploadToCloudinary(req.file.path);
+    item.image = await uploadToCloudinary(itemImageFile.path);
   }
 
   if (name) item.name = name;
   if (description) item.description = description;
   if (price) item.price = price;
   if (category) item.category = category;
-  if (ingredients) item.ingredients = JSON.parse(ingredients);
+
+  const ingredientImages = req.files?.ingredientImage || [];
+  const hasIngredients = typeof ingredients !== "undefined";
+  let nextIngredients = hasIngredients ? parseIngredients(ingredients) : null;
+
+  if (ingredientImages.length) {
+    const baseIngredients = (nextIngredients ?? item.ingredients).map(
+      (ingredient) =>
+        typeof ingredient.toObject === "function"
+          ? ingredient.toObject()
+          : ingredient
+    );
+    nextIngredients = await attachIngredientImages(
+      baseIngredients,
+      ingredientImages
+    );
+  }
+
+  if (nextIngredients) item.ingredients = nextIngredients;
   if (req.body.availableDays !== undefined) {
     try {
       item.availableDays = parseAvailableDays(req.body.availableDays);
