@@ -7,7 +7,7 @@ import { sendSuccess } from "../utils/response.js";
  * @desc Create order from cart
  */
 export const createOrder = asyncHandler(async (req, res) => {
-  const { userId, address, phone } = req.body;
+  const { userId, address, phone, scheduledFor } = req.body;
 
   const cart = await Cart.findOne({ user: userId }).populate("items.item");
   if (!cart || cart.items.length === 0) {
@@ -32,6 +32,23 @@ export const createOrder = asyncHandler(async (req, res) => {
     0
   );
 
+  let scheduledDate;
+  if (scheduledFor) {
+    const parsedDate = new Date(scheduledFor);
+    if (Number.isNaN(parsedDate.getTime())) {
+      res.status(400);
+      throw new Error("Invalid scheduledFor date");
+    }
+
+    const now = new Date();
+    if (parsedDate.getTime() < now.getTime()) {
+      res.status(400);
+      throw new Error("Scheduled date must be in the future");
+    }
+
+    scheduledDate = parsedDate;
+  }
+
   const order = await Order.create({
     user: userId,
     items: validCartItems.map((cartItem) => ({
@@ -41,6 +58,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     totalAmount,
     address,
     phone,
+    ...(scheduledDate && { scheduledFor: scheduledDate }),
   });
 
   // Clear cart after placing order

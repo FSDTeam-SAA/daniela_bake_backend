@@ -14,6 +14,9 @@ const categorySchema = new mongoose.Schema(
       type: String,
       default: "#ffffff",
     },
+    order: {
+      type: Number,
+    },
   },
   { timestamps: true }
 );

@@ -42,6 +42,9 @@ const orderSchema = new mongoose.Schema(
       enum: ["Pending", "Paid", "Refunded"],
       default: "Pending",
     },
+    scheduledFor: {
+      type: Date,
+    },
     estimatedDelivery: {
       type: String,
       default: "30-45 mins",
