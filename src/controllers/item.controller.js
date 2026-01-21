@@ -68,6 +68,58 @@ const parseIngredients = (ingredients) => {
   return JSON.parse(ingredients);
 };
 
+const MAX_ITEM_IMAGES = 5;
+
+const collectItemImageFiles = (req) => {
+  const files = [];
+  if (Array.isArray(req.files?.images)) {
+    files.push(...req.files.images);
+  }
+  if (Array.isArray(req.files?.image)) {
+    files.push(...req.files.image);
+  }
+  if (req.file) {
+    files.push(req.file);
+  }
+  return files;
+};
+
+const parseExistingImages = (value, fallback = []) => {
+  if (value === undefined || value === null || value === "") return fallback;
+
+  let images = value;
+  if (typeof images === "string") {
+    try {
+      images = JSON.parse(images);
+    } catch {
+      images = images.split(",").map((img) => img.trim());
+    }
+  }
+
+  if (!Array.isArray(images)) {
+    throw new Error("existingImages must be an array");
+  }
+
+  return images.filter(Boolean);
+};
+
+const dedupeImages = (images = []) =>
+  images.filter(Boolean).filter((url, index, arr) => arr.indexOf(url) === index);
+
+const uploadImages = async (files = []) => {
+  if (!files.length) return [];
+  const uploads = await Promise.all(
+    files.map((file) => uploadToCloudinary(file.path))
+  );
+  return uploads.filter(Boolean);
+};
+
+const getExistingItemImages = (item) => {
+  if (Array.isArray(item.images) && item.images.length) return item.images;
+  if (item.image) return [item.image];
+  return [];
+};
+
 const attachIngredientImages = async (ingredientsList, imageFiles) => {
   if (!ingredientsList?.length || !imageFiles?.length) return ingredientsList;
   const uploaded = await Promise.all(
@@ -86,13 +138,27 @@ const attachIngredientImages = async (ingredientsList, imageFiles) => {
  */
 export const createItem = asyncHandler(async (req, res) => {
   const { name, description, price, category, ingredients } = req.body;
-  const itemImageFile = req.files?.image?.[0] || req.file;
-  if (!itemImageFile) {
+  const imageFiles = collectItemImageFiles(req);
+  if (!imageFiles.length) {
     res.status(400);
-    throw new Error("Image is required");
+    throw new Error("At least one image is required");
+  }
+  if (imageFiles.length > MAX_ITEM_IMAGES) {
+    res.status(400);
+    throw new Error(`You can upload up to ${MAX_ITEM_IMAGES} images per item`);
   }
 
-  const imageUrl = await uploadToCloudinary(itemImageFile.path);
+  const uploadedImages = await uploadImages(imageFiles);
+  if (!uploadedImages.length) {
+    res.status(400);
+    throw new Error("Failed to upload images");
+  }
+  const images = dedupeImages(uploadedImages).slice(0, MAX_ITEM_IMAGES);
+  if (!images.length) {
+    res.status(400);
+    throw new Error("At least one valid image is required");
+  }
+
   const parsedIngredients = parseIngredients(ingredients);
   const ingredientImages = req.files?.ingredientImage || [];
   const ingredientsWithImages = await attachIngredientImages(
@@ -111,7 +177,8 @@ export const createItem = asyncHandler(async (req, res) => {
     name,
     description,
     price,
-    image: imageUrl,
+    images,
+    image: images[0],
     category,
     ingredients: ingredientsWithImages,
     ...(parsedAvailableDays ? { availableDays: parsedAvailableDays } : {}),
@@ -228,12 +295,53 @@ export const updateItem = asyncHandler(async (req, res) => {
 
   const { name, description, price, category, ingredients } = req.body;
 
-  const itemImageFile = req.files?.image?.[0] || req.file;
-  if (itemImageFile) {
-    // Delete old image before uploading new one
-    await deleteFromCloudinary(item.image);
-    item.image = await uploadToCloudinary(itemImageFile.path);
+  const currentImages = getExistingItemImages(item);
+  let nextImages = currentImages;
+
+  try {
+    nextImages = parseExistingImages(req.body.existingImages, currentImages);
+  } catch (error) {
+    res.status(400);
+    throw error;
   }
+
+  nextImages = dedupeImages(nextImages);
+
+  if (nextImages.length > MAX_ITEM_IMAGES) {
+    res.status(400);
+    throw new Error(`You can upload up to ${MAX_ITEM_IMAGES} images per item`);
+  }
+
+  const newImageFiles = collectItemImageFiles(req);
+  if (newImageFiles.length) {
+    if (nextImages.length + newImageFiles.length > MAX_ITEM_IMAGES) {
+      res.status(400);
+      throw new Error(
+        `You can upload up to ${MAX_ITEM_IMAGES} images per item`
+      );
+    }
+
+    const uploadedImages = await uploadImages(newImageFiles);
+    nextImages = dedupeImages([...nextImages, ...uploadedImages]).slice(
+      0,
+      MAX_ITEM_IMAGES
+    );
+  }
+
+  if (!nextImages.length) {
+    res.status(400);
+    throw new Error("At least one image is required");
+  }
+
+  const removedImages = currentImages.filter(
+    (url) => !nextImages.includes(url)
+  );
+  if (removedImages.length) {
+    await Promise.all(removedImages.map((url) => deleteFromCloudinary(url)));
+  }
+
+  item.images = nextImages;
+  item.image = nextImages[0];
 
   if (name) item.name = name;
   if (description) item.description = description;
@@ -281,7 +389,10 @@ export const deleteItem = asyncHandler(async (req, res) => {
     throw new Error("Item not found");
   }
 
-  await deleteFromCloudinary(item.image);
+  const imagesToDelete = getExistingItemImages(item);
+  if (imagesToDelete.length) {
+    await Promise.all(imagesToDelete.map((url) => deleteFromCloudinary(url)));
+  }
   await item.deleteOne();
 
   sendSuccess(res, null, "Item deleted and image removed from Cloudinary");

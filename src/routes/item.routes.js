@@ -14,7 +14,8 @@ router.route("/")
   .get(getItems)
   .post(
     upload.fields([
-      { name: "image", maxCount: 1 },
+      { name: "images", maxCount: 5 },
+      { name: "image", maxCount: 5 },
       { name: "ingredientImage", maxCount: 20 },
     ]),
     createItem
@@ -24,7 +25,8 @@ router.route("/:id")
   .get(getItemById)
   .put(
     upload.fields([
-      { name: "image", maxCount: 1 },
+      { name: "images", maxCount: 5 },
+      { name: "image", maxCount: 5 },
       { name: "ingredientImage", maxCount: 20 },
     ]),
     updateItem

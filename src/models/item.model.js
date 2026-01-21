@@ -20,6 +20,14 @@ const itemSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Price is required"],
     },
+    images: {
+      type: [String],
+      validate: {
+        validator: (val) => Array.isArray(val) && val.length <= 5,
+        message: "Images cannot exceed 5",
+      },
+      default: [],
+    },
     image: {
       type: String, // image URL
       required: [true, "Image is required"],
@@ -51,6 +59,18 @@ const itemSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Keep legacy image field in sync with images array so older clients continue to work
+itemSchema.pre("save", function (next) {
+  if ((!this.images || this.images.length === 0) && this.image) {
+    this.images = [this.image];
+  }
+
+  if (Array.isArray(this.images) && this.images.length) {
+    this.image = this.images[0];
+  }
+  next();
+});
 
 itemSchema.index({ availableDays: 1 });
 
