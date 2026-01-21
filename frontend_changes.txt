@@ -1,0 +1,19 @@
+Notes for frontend (no dashboard UI details)
+
+Items
+- Max 5 images per item. Create/update expects multipart files named `images[]` (or `image`); server dedupes and keeps the first as legacy `image`.
+- To keep existing images on update, send `existingImages` as a JSON array or comma string plus any new `images[]`. At least 1 image must remain.
+- Optional `specialDays` array for featured items; valid values: sun, mon, tue, wed, thu, fri, sat. `availableDays` still defaults to all days.
+- `GET /api/v1/items?day=` now filters by `specialDays` only. Use `day=tue` (or mon/sun/…), `day=today` for the current weekday, or `day=all` (default) to return every item.
+
+Orders
+- Create order: body `{ userId, address, phone, scheduledFor? }`. `scheduledFor` must be an ISO date/time in the future; order is built from the user’s cart (fails if cart empty or items missing). Cart is cleared after creation.
+- Order model adds `paymentStatus` enum: Pending | Paid | Failed | Refunded. `scheduledFor: Date` is stored when provided.
+- List orders: `GET /api/v1/orders` supports filters `paymentStatus=Paid` (etc.) and `timeRange=day|week|month|year` to constrain by `createdAt` (plus existing page/limit/sort/status/user).
+- Reorder: `POST /api/v1/orders/:id/reorder` with body `{ userId }` (falls back to original order’s user). Copies all items/quantities into the user’s cart (creates cart if missing) and recalculates totals.
+
+Favorites
+- `GET /api/v1/favorites/:userId` now accepts `?category=<categoryId>` to return only favorites in that category; items without the category match are omitted.
+
+Dashboard API (backend only)
+- `GET /api/v1/dashboard/overview?timeRange=day|week|month|year` returns stats, performance buckets, and recent orders for the requested range. Stats keys: totalCustomers, totalDelivered, totalRevenue, totalOrders. Charts.performance gives per-bucket `orders` and `revenue`.

@@ -56,6 +56,15 @@ const itemSchema = new mongoose.Schema(
       default: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
       required: true,
     },
+    specialDays: {
+      type: [
+        {
+          type: String,
+          enum: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+        },
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );

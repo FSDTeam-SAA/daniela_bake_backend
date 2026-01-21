@@ -60,6 +60,11 @@ const parseAvailableDays = (value) => {
   return Array.from(new Set(normalized));
 };
 
+const parseSpecialDays = (value) => {
+  if (value === undefined || value === null || value === "") return [];
+  return parseAvailableDays(value) || [];
+};
+
 const getTodayDayLabel = () => DAY_LABELS[new Date().getDay()];
 
 const parseIngredients = (ingredients) => {
@@ -172,6 +177,7 @@ export const createItem = asyncHandler(async (req, res) => {
     res.status(400);
     throw error;
   }
+  const parsedSpecialDays = parseSpecialDays(req.body.specialDays);
 
   const item = await Item.create({
     name,
@@ -182,6 +188,7 @@ export const createItem = asyncHandler(async (req, res) => {
     category,
     ingredients: ingredientsWithImages,
     ...(parsedAvailableDays ? { availableDays: parsedAvailableDays } : {}),
+    specialDays: parsedSpecialDays,
   });
 
   res.status(201);
@@ -206,7 +213,7 @@ export const getItems = asyncHandler(async (req, res) => {
 
   const filters = [];
 
-  const dayParam = (day || "today").toString().toLowerCase();
+  const dayParam = (day || "all").toString().toLowerCase();
 
   if (dayParam !== "all") {
     const resolvedDay =
@@ -222,12 +229,7 @@ export const getItems = asyncHandler(async (req, res) => {
     }
 
     filters.push({
-      $or: [
-        { availableDays: resolvedDay },
-        { availableDays: { $elemMatch: { $regex: `^${resolvedDay}$`, $options: "i" } } },
-        { availableDays: { $exists: false } },
-        { availableDays: { $size: 0 } },
-      ],
+      specialDays: resolvedDay,
     });
   }
 
@@ -369,6 +371,14 @@ export const updateItem = asyncHandler(async (req, res) => {
   if (req.body.availableDays !== undefined) {
     try {
       item.availableDays = parseAvailableDays(req.body.availableDays);
+    } catch (error) {
+      res.status(400);
+      throw error;
+    }
+  }
+  if (req.body.specialDays !== undefined) {
+    try {
+      item.specialDays = parseSpecialDays(req.body.specialDays);
     } catch (error) {
       res.status(400);
       throw error;
