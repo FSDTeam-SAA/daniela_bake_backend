@@ -48,16 +48,6 @@ const itemSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-    availableDays: {
-      type: [
-        {
-          type: String,
-          enum: WEEKDAY_ENUM,
-        },
-      ],
-      default: WEEKDAY_ENUM,
-      required: true,
-    },
     specialDays: {
       type: [
         {
@@ -82,7 +72,5 @@ itemSchema.pre("save", function (next) {
   }
   next();
 });
-
-itemSchema.index({ availableDays: 1 });
 
 export default mongoose.model("Item", itemSchema);

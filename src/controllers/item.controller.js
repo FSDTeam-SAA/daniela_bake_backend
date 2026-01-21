@@ -23,9 +23,8 @@ const normalizeDay = (value) => {
   return DAY_SYNONYMS[key] || null;
 };
 
-const parseAvailableDays = (value) => {
-  if (value === undefined || value === null || value === "") return null;
-
+const parseSpecialDays = (value) => {
+  if (value === undefined || value === null || value === "") return [];
   let days = value;
   if (typeof days === "string") {
     try {
@@ -36,7 +35,7 @@ const parseAvailableDays = (value) => {
   }
 
   if (!Array.isArray(days)) {
-    throw new Error("availableDays must be an array of days");
+    throw new Error("specialDays must be an array of days");
   }
 
   const normalized = days
@@ -47,18 +46,13 @@ const parseAvailableDays = (value) => {
   const invalid = normalized.filter((d) => !DAY_LABELS.includes(d));
   if (invalid.length) {
     throw new Error(
-      `Invalid availableDays value(s): ${invalid.join(", ")}. Use ${DAY_LABELS.join(
+      `Invalid specialDays value(s): ${invalid.join(", ")}. Use ${DAY_LABELS.join(
         ", "
       )}`
     );
   }
 
   return Array.from(new Set(normalized));
-};
-
-const parseSpecialDays = (value) => {
-  if (value === undefined || value === null || value === "") return [];
-  return parseAvailableDays(value) || [];
 };
 
 const getTodayDayLabel = () => {
@@ -175,13 +169,6 @@ export const createItem = asyncHandler(async (req, res) => {
     parsedIngredients,
     ingredientImages
   );
-  let parsedAvailableDays = null;
-  try {
-    parsedAvailableDays = parseAvailableDays(req.body.availableDays);
-  } catch (error) {
-    res.status(400);
-    throw error;
-  }
   const parsedSpecialDays = parseSpecialDays(req.body.specialDays);
 
   const item = await Item.create({
@@ -192,7 +179,6 @@ export const createItem = asyncHandler(async (req, res) => {
     image: images[0],
     category,
     ingredients: ingredientsWithImages,
-    ...(parsedAvailableDays ? { availableDays: parsedAvailableDays } : {}),
     specialDays: parsedSpecialDays,
   });
 
@@ -373,14 +359,6 @@ export const updateItem = asyncHandler(async (req, res) => {
   }
 
   if (nextIngredients) item.ingredients = nextIngredients;
-  if (req.body.availableDays !== undefined) {
-    try {
-      item.availableDays = parseAvailableDays(req.body.availableDays);
-    } catch (error) {
-      res.status(400);
-      throw error;
-    }
-  }
   if (req.body.specialDays !== undefined) {
     try {
       item.specialDays = parseSpecialDays(req.body.specialDays);
