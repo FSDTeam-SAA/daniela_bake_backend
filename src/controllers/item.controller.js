@@ -3,10 +3,8 @@ import Item from "../models/item.model.js";
 import { uploadToCloudinary, deleteFromCloudinary } from "../utils/uploadImage.js";
 import { sendSuccess } from "../utils/response.js";
 
-const DAY_LABELS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+const DAY_LABELS = ["mon", "tue", "wed", "thu", "fri"];
 const DAY_SYNONYMS = {
-  sunday: "sun",
-  sun: "sun",
   monday: "mon",
   mon: "mon",
   tuesday: "tue",
@@ -17,8 +15,6 @@ const DAY_SYNONYMS = {
   thu: "thu",
   friday: "fri",
   fri: "fri",
-  saturday: "sat",
-  sat: "sat",
 };
 
 const normalizeDay = (value) => {
@@ -65,7 +61,16 @@ const parseSpecialDays = (value) => {
   return parseAvailableDays(value) || [];
 };
 
-const getTodayDayLabel = () => DAY_LABELS[new Date().getDay()];
+const getTodayDayLabel = () => {
+  const map = {
+    1: "mon",
+    2: "tue",
+    3: "wed",
+    4: "thu",
+    5: "fri",
+  };
+  return map[new Date().getDay()] || null;
+};
 
 const parseIngredients = (ingredients) => {
   if (!ingredients) return [];

@@ -6,6 +6,8 @@ const ingredientSchema = new mongoose.Schema({
   isAllergen: { type: Boolean, default: false },
 });
 
+const WEEKDAY_ENUM = ["mon", "tue", "wed", "thu", "fri"];
+
 const itemSchema = new mongoose.Schema(
   {
     name: {
@@ -50,17 +52,17 @@ const itemSchema = new mongoose.Schema(
       type: [
         {
           type: String,
-          enum: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+          enum: WEEKDAY_ENUM,
         },
       ],
-      default: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+      default: WEEKDAY_ENUM,
       required: true,
     },
     specialDays: {
       type: [
         {
           type: String,
-          enum: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+          enum: WEEKDAY_ENUM,
         },
       ],
       default: [],
