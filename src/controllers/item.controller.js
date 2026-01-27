@@ -130,8 +130,13 @@ const attachIngredientImages = async (ingredientsList, imageFiles) => {
     imageFiles.map((file) => uploadToCloudinary(file.path))
   );
 
-  return ingredientsList.map((ingredient, index) => {
-    const imageUrl = uploaded[index];
+  let uploadIdx = 0;
+  return ingredientsList.map((ingredient) => {
+    // Preserve existing images; only fill gaps
+    if (ingredient?.image) return ingredient;
+
+    const imageUrl = uploaded[uploadIdx];
+    uploadIdx += 1;
     if (!imageUrl) return ingredient;
     return { ...ingredient, image: imageUrl };
   });

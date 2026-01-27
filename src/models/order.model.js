@@ -32,6 +32,10 @@ const orderSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    pickOrder: {
+      type: Boolean,
+      default: false,
+    },
     status: {
       type: String,
       enum: ["Pending", "Processing", "Delivered", "Cancelled"],

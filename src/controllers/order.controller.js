@@ -56,7 +56,7 @@ const calculateCartTotal = async (items = []) => {
  * @desc Create order from cart
  */
 export const createOrder = asyncHandler(async (req, res) => {
-  const { userId, address, phone, scheduledFor } = req.body;
+  const { userId, address, phone, scheduledFor, pickOrder } = req.body;
 
   const cart = await Cart.findOne({ user: userId }).populate("items.item");
   if (!cart || cart.items.length === 0) {
@@ -107,6 +107,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     totalAmount,
     address,
     phone,
+    pickOrder: Boolean(pickOrder),
     ...(scheduledDate && { scheduledFor: scheduledDate }),
   });
 
@@ -235,7 +236,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
  * @desc Update order status/payment
  */
 export const updateOrder = asyncHandler(async (req, res) => {
-  const { status, paymentStatus } = req.body;
+  const { status, paymentStatus, pickOrder } = req.body;
   const order = await Order.findById(req.params.id);
   if (!order) {
     res.status(404);
@@ -244,6 +245,10 @@ export const updateOrder = asyncHandler(async (req, res) => {
 
   if (status) order.status = status;
   if (paymentStatus) order.paymentStatus = paymentStatus;
+  // allow toggling between pickup and delivery
+  if (typeof pickOrder === "boolean") {
+    order.pickOrder = pickOrder;
+  }
 
   const updated = await order.save();
   sendSuccess(res, updated, "Order updated successfully");
