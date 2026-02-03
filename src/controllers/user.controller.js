@@ -3,6 +3,13 @@ import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
 import Order from "../models/order.model.js";
 import Profile from "../models/profile.model.js";
+import Cart from "../models/cart.model.js";
+import Favorite from "../models/favorite.model.js";
+import Review from "../models/review.model.js";
+import RefreshToken from "../models/refreshToken.model.js";
+import PasswordReset from "../models/passwordReset.model.js";
+import Conversation from "../models/conversation.model.js";
+import Message from "../models/message.model.js";
 import { sendSuccess } from "../utils/response.js";
 
 const attachOrdersToUsers = async (users) => {
@@ -123,7 +130,31 @@ export const deleteUser = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User not found");
   }
-  await user.deleteOne();
+  const userId = user._id;
+  const conversations = await Conversation.find({ participants: userId })
+    .select("_id")
+    .lean();
+  const conversationIds = conversations.map((conversation) => conversation._id);
+
+  const messageQuery = {
+    $or: [{ sender: userId }, { receiver: userId }],
+  };
+  if (conversationIds.length) {
+    messageQuery.$or.push({ conversation: { $in: conversationIds } });
+  }
+
+  await Promise.all([
+    Order.deleteMany({ user: userId }),
+    Cart.deleteMany({ user: userId }),
+    Profile.deleteOne({ user: userId }),
+    Favorite.deleteMany({ user: userId }),
+    Review.deleteMany({ user: userId }),
+    RefreshToken.deleteMany({ user: userId }),
+    PasswordReset.deleteMany({ user: userId }),
+    Message.deleteMany(messageQuery),
+    Conversation.deleteMany({ _id: { $in: conversationIds } }),
+    user.deleteOne(),
+  ]);
   sendSuccess(res, null, "User removed successfully");
 });
 
