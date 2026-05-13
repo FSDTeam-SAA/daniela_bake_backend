@@ -3,7 +3,6 @@ import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { uploadToCloudinary } from "../utils/uploadImage.js";
 import { sendSuccess } from "../utils/response.js";
-import { io } from "../server.js";
 
 const buildSuccessPayload = (data, message) => ({
   success: true,
@@ -68,8 +67,7 @@ export const sendMessage = asyncHandler(async (req, res) => {
   const responseData = [messageData];
   const socketPayload = buildSuccessPayload(responseData, "Message sent successfully");
 
-  // emit via socket.io if available
-  io.to(conversationId.toString()).emit("message", socketPayload);
+  req.io?.to(conversationId.toString()).emit("message", socketPayload);
 
   res.status(201);
   sendSuccess(res, responseData, "Message sent successfully");

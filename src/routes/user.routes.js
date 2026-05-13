@@ -6,17 +6,18 @@ import {
   updateUser,
   deleteUser,
 } from "../controllers/user.controller.js";
+import { protect, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
 router.route("/")
-  .get(getUsers);
+  .get(protect, requireRole("admin"), getUsers);
 
-router.get("/admin", getAdminUsers);
+router.get("/admin", protect, requireRole("admin"), getAdminUsers);
 
 router.route("/:id")
-  .get(getUserById)
-  .put(updateUser)
-  .delete(deleteUser);
+  .get(protect, requireRole("admin"), getUserById)
+  .put(protect, requireRole("admin"), updateUser)
+  .delete(protect, requireRole("admin"), deleteUser);
 
 export default router;

@@ -64,6 +64,14 @@ export const getProfile = asyncHandler(async (req, res) => {
  */
 export const deleteProfile = asyncHandler(async (req, res) => {
   const userId = req.params.userId;
+  const isOwner = req.user?._id?.toString() === userId;
+  const isAdmin = req.user?.role === "admin";
+
+  if (!isOwner && !isAdmin) {
+    res.status(403);
+    throw new Error("Forbidden");
+  }
+
   const user = await User.findById(userId);
   if (!user) {
     res.status(404);
