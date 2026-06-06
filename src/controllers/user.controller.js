@@ -161,8 +161,16 @@ export const deleteUser = asyncHandler(async (req, res) => {
 /**
  * @desc Get admin users
  */
-export const getAdminUsers = asyncHandler(async (_req, res) => {
-  const admins = await User.find({ role: "admin" }).sort("-createdAt").lean();
-  const adminsWithOrders = await attachOrdersToUsers(admins);
-  sendSuccess(res, adminsWithOrders, "Admin users retrieved successfully");
+export const getAdminUsers = asyncHandler(async (req, res) => {
+  const isAdmin = req.user?.role === "admin";
+
+  // Non-admins (e.g. a customer opening support chat) only need the admin's
+  // basic identity to start a conversation — never their orders/profile.
+  const admins = await User.find({ role: "admin" })
+    .sort("-createdAt")
+    .select(isAdmin ? "-password" : "_id name email role")
+    .lean();
+
+  const data = isAdmin ? await attachOrdersToUsers(admins) : admins;
+  sendSuccess(res, data, "Admin users retrieved successfully");
 });

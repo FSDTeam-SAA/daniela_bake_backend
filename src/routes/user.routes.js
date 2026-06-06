@@ -13,7 +13,9 @@ const router = express.Router();
 router.route("/")
   .get(protect, requireRole("admin"), getUsers);
 
-router.get("/admin", protect, requireRole("admin"), getAdminUsers);
+// Any authenticated user may look up the admin contact in order to start a chat.
+// Non-admin callers receive only minimal public fields (see getAdminUsers).
+router.get("/admin", protect, getAdminUsers);
 
 router.route("/:id")
   .get(protect, requireRole("admin"), getUserById)
