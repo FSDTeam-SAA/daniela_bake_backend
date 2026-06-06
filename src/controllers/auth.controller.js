@@ -13,7 +13,7 @@ const signAccess = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn:
 const makeOpaque = () => crypto.randomBytes(48).toString("hex");
 
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password } = req.body;
 
   const exists = await User.findOne({ email });
   if (exists) {
@@ -21,8 +21,12 @@ export const register = asyncHandler(async (req, res) => {
     throw new Error("Email already in use");
   }
 
-  // 1) create user
-  const user = await User.create({ name, email, password, role });
+  // 1) create user.
+  // Never trust a client-supplied role: public signups are always regular
+  // users. Admins are promoted explicitly via the admin user-management
+  // endpoint (PUT /users/:id). Forcing "user" here also prevents the
+  // role: null records that a null in the request body used to create.
+  const user = await User.create({ name, email, password, role: "user" });
 
   // 2) create matching profile (name copied to fullName)
   await Profile.create({
