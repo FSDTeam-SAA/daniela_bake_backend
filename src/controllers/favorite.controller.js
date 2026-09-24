@@ -47,8 +47,7 @@ export const removeFavorite = asyncHandler(async (req, res) => {
 
   const favorite = await Favorite.findOneAndDelete({ user: userId, item: itemId });
   if (!favorite) {
-    res.status(404);
-    throw new Error("Favorite not found");
+    return sendSuccess(res, null, "Removed from favorites");
   }
 
   sendSuccess(res, null, "Removed from favorites");
